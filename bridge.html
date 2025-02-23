@@ -33,7 +33,6 @@
 
         td:first-child {
             border-right: 1px solid rgb(182, 179, 179);
-            /* Right border only for column 1 */
         }
 
         input {
@@ -51,6 +50,15 @@
         .output {
             font-weight: bold;
             flex-grow: 1;
+        }
+
+        /* --- NEW: classes for coloring output --- */
+        .invalid {
+            color: gray;
+        }
+
+        .valid {
+            color: green;
         }
 
         .copy-btn {
@@ -79,7 +87,6 @@
             position: absolute;
             z-index: 1;
             bottom: 125%;
-            /* Position above */
             left: 50%;
             transform: translateX(-50%);
             opacity: 0;
@@ -91,46 +98,87 @@
             opacity: 1;
         }
     </style>
+
     <script>
+        function isValidBlueskyOutput(str) {
+            // Hardcoded bsky.social: must match @username.bsky.social.ap.brid.gy
+            return /^@[A-Za-z0-9_-]+\.bsky\.social\.ap\.brid\.gy$/.test(str);
+        }
+
+        function isValidFediverseOutput(str) {
+            // General pattern: @username.domain.tld@bsky.brid.gy
+            return /^@[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z]{2,}@bsky\.brid\.gy$/.test(str);
+        }
+
         function updateFediverseOutput() {
             let blueskyHandle = document.getElementById('blueskyHandle').value.trim();
+            let outputEl = document.getElementById('blueskyOutput');
+            let copyBtn = document.getElementById('copyBlueskyBtn');
+
             if (blueskyHandle) {
-                // Add @ only if it's not already there
-                if (!blueskyHandle.startsWith('@')) {
-                    blueskyHandle = blueskyHandle.replace('@', ''); // Remove if exists
-                    document.getElementById('blueskyOutput').textContent = `@${blueskyHandle}.ap.brid.gy`;
+                // Remove any leading @
+                if (blueskyHandle.startsWith('@')) {
+                    blueskyHandle = blueskyHandle.slice(1);
+                }
+                // Construct output
+                const result = `@${blueskyHandle}.ap.brid.gy`;
+                outputEl.textContent = result;
+
+                // --- NEW: validity check ---
+                if (isValidBlueskyOutput(result)) {
+                    outputEl.classList.remove('invalid');
+                    outputEl.classList.add('valid');
+                    copyBtn.style.display = 'inline';
                 } else {
-                    blueskyHandle = blueskyHandle.substring(1); // Remove the @ at the start
-                    document.getElementById('blueskyOutput').textContent = `@${blueskyHandle}.ap.brid.gy`;
+                    outputEl.classList.remove('valid');
+                    outputEl.classList.add('invalid');
+                    copyBtn.style.display = 'none';
                 }
             } else {
-                document.getElementById('blueskyOutput').textContent = '';
+                outputEl.textContent = '';
+                // Reset style/copy button
+                outputEl.classList.remove('valid', 'invalid');
+                copyBtn.style.display = 'none';
             }
         }
 
         function updateBlueskyOutput() {
             let fediverseHandle = document.getElementById('fediverseHandle').value.trim();
+            let outputEl = document.getElementById('fediverseOutput');
+            let copyBtn = document.getElementById('copyFediverseBtn');
+
             if (fediverseHandle) {
-                // Remove any starting @ if present
-                fediverseHandle = fediverseHandle.replace(/^@/, '');
-
-                // Split at the @ that separates username and domain
+                fediverseHandle = fediverseHandle.replace(/^@/, ''); // remove leading @
                 const [username, domain] = fediverseHandle.split('@');
-
+                let result;
                 if (domain) {
-                    // Combine username and domain without @ between them
-                    document.getElementById('fediverseOutput').textContent = `@${username}.${domain}@bsky.brid.gy`;
+                    result = `@${username}.${domain}@bsky.brid.gy`;
                 } else {
-                    document.getElementById('fediverseOutput').textContent = `@${username}@bsky.brid.gy`;
+                    result = `@${username}@bsky.brid.gy`;
+                }
+                outputEl.textContent = result;
+
+                // --- NEW: validity check ---
+                if (isValidFediverseOutput(result)) {
+                    outputEl.classList.remove('invalid');
+                    outputEl.classList.add('valid');
+                    copyBtn.style.display = 'inline';
+                } else {
+                    outputEl.classList.remove('valid');
+                    outputEl.classList.add('invalid');
+                    copyBtn.style.display = 'none';
                 }
             } else {
-                document.getElementById('fediverseOutput').textContent = '';
+                outputEl.textContent = '';
+                // Reset style/copy button
+                outputEl.classList.remove('valid', 'invalid');
+                copyBtn.style.display = 'none';
             }
         }
 
         function copyToClipboard(elementId, tooltipId) {
             const text = document.getElementById(elementId).textContent;
-            if (text) {  // Only try to copy if there's text
+            if (text) {
                 navigator.clipboard.writeText(text).then(() => {
                     const tooltip = document.getElementById(tooltipId);
                     tooltip.innerText = "Copied!";
@@ -149,14 +197,11 @@
             }
         }
 
-        // Set up listeners
         document.addEventListener("DOMContentLoaded", setupEventListeners);
-        setupEventListeners();
     </script>
 </head>
 
 <body>
-
     <table>
         <tr>
             <th>With your Fediverse account</th>
@@ -178,7 +223,7 @@
         </tr>
         <tr>
             <td>
-                Example: jonudell.bluesky.social
+                Example: jonudell.bsky.social
             </td>
             <td>
                 Example: judell@social.coop
@@ -186,11 +231,14 @@
         </tr>
         <tr>
             <td>
-                <label>Bluesky Handle: <input type="text" id="blueskyHandle" placeholder="jonudell.bsky.social"></label>
+                <label>Bluesky Handle:
+                    <input type="text" id="blueskyHandle" placeholder="jonudell.bsky.social">
+                </label>
             </td>
             <td>
-                <label>Fediverse Handle: <input type="text" id="fediverseHandle"
-                        placeholder="judell@social.coop"></label>
+                <label>Fediverse Handle:
+                    <input type="text" id="fediverseHandle" placeholder="judell@social.coop">
+                </label>
             </td>
         </tr>
         <tr>
@@ -198,7 +246,9 @@
                 <div class="output-container">
                     <strong class="output" id="blueskyOutput"></strong>
                     <div class="tooltip">
-                        <button class="copy-btn" onclick="copyToClipboard('blueskyOutput', 'tooltip1')">
+                        <!-- NEW: give this button an id to show/hide -->
+                        <button class="copy-btn" id="copyBlueskyBtn" style="display:none;"
+                            onclick="copyToClipboard('blueskyOutput', 'tooltip1')">
                             📋
                         </button>
                         <span class="tooltiptext" id="tooltip1">Copy</span>
@@ -209,7 +259,9 @@
                 <div class="output-container">
                     <strong class="output" id="fediverseOutput"></strong>
                     <div class="tooltip">
-                        <button class="copy-btn" onclick="copyToClipboard('fediverseOutput', 'tooltip2')">
+                        <!-- NEW: give this button an id to show/hide -->
+                        <button class="copy-btn" id="copyFediverseBtn" style="display:none;"
+                            onclick="copyToClipboard('fediverseOutput', 'tooltip2')">
                             📋
                         </button>
                         <span class="tooltiptext" id="tooltip2">Copy</span>
@@ -218,7 +270,6 @@
             </td>
         </tr>
     </table>
-
 </body>
 
 </html>
