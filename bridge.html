@@ -106,9 +106,68 @@
         }
 
         function isValidFediverseOutput(str) {
-            // General pattern: @username.domain.tld@bsky.brid.gy
-            return /^@[A-Za-z0-9_-]+\.[A-Za-z0-9_-]+\.[A-Za-z]{2,}@bsky\.brid\.gy$/.test(str);
+            let validTLDs = new Set();
+            let tldLoaded = false;
+
+            // Fetch TLDs and revalidate fields once ready
+            fetch("https://data.iana.org/TLD/tlds-alpha-by-domain.txt")
+                .then(response => response.text())
+                .then(data => {
+                    validTLDs = new Set(
+                        data.split("\n")
+                            .map(tld => tld.trim().toLowerCase()) // Normalize
+                            .filter(tld => tld && !tld.startsWith("#")) // Remove comments
+                    );
+                    tldLoaded = true; // Mark as ready
+
+                    // **Revalidate existing inputs immediately**
+                    updateFediverseOutput();
+                })
+                .catch(() => {
+                    console.warn("Failed to fetch TLD list. Falling back to basic validation.");
+                });
+
+            function isValidFediverseOutput(str) {
+                if (!tldLoaded) return false; // **Ensures validation waits until TLDs are ready**
+
+                const match = str.match(/^@([A-Za-z0-9_-]+)\.([A-Za-z0-9_-]+)\.([A-Za-z]+)@bsky\.brid\.gy$/);
+                if (!match) return false; // Must match full format
+
+                const tld = match[3].toLowerCase();
+                return validTLDs.has(tld); // **Only allow real TLDs**
+            }
+
+            // **Ensure input field updates after validation status changes**
+            function updateFediverseOutput() {
+                let fediverseHandle = document.getElementById('fediverseHandle').value.trim();
+                let outputEl = document.getElementById('fediverseOutput');
+                let copyBtn = document.getElementById('copyFediverseBtn');
+
+                if (fediverseHandle) {
+                    fediverseHandle = fediverseHandle.replace(/^@/, ''); // Remove leading @
+                    const [username, domain] = fediverseHandle.split('@');
+                    let result = username && domain ? `@${username}.${domain}@bsky.brid.gy` : '';
+
+                    outputEl.textContent = result;
+
+                    if (isValidFediverseOutput(result)) {
+                        outputEl.classList.remove('invalid');
+                        outputEl.classList.add('valid');
+                        copyBtn.style.display = 'inline';
+                    } else {
+                        outputEl.classList.remove('valid');
+                        outputEl.classList.add('invalid');
+                        copyBtn.style.display = 'none';
+                    }
+                } else {
+                    outputEl.textContent = '';
+                    outputEl.classList.remove('valid', 'invalid');
+                    copyBtn.style.display = 'none';
+                }
+            }
+
         }
+
 
         function updateFediverseOutput() {
             let blueskyHandle = document.getElementById('blueskyHandle').value.trim();
