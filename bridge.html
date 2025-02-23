@@ -121,7 +121,7 @@
                     tldLoaded = true; // Mark as ready
 
                     // **Revalidate existing inputs immediately**
-                    updateFediverseOutput();
+                    updateFediverseDisplay();
                 })
                 .catch(() => {
                     console.warn("Failed to fetch TLD list. Falling back to basic validation.");
@@ -138,7 +138,7 @@
             }
 
             // **Ensure input field updates after validation status changes**
-            function updateFediverseOutput() {
+            function updateFediverseDisplay() {
                 let fediverseHandle = document.getElementById('fediverseHandle').value.trim();
                 let outputEl = document.getElementById('fediverseOutput');
                 let copyBtn = document.getElementById('copyFediverseBtn');
@@ -201,7 +201,7 @@
             }
         }
 
-        function updateBlueskyOutput() {
+        function updateBlueskyDisplay() {
             let fediverseHandle = document.getElementById('fediverseHandle').value.trim();
             let outputEl = document.getElementById('fediverseOutput');
             let copyBtn = document.getElementById('copyFediverseBtn');
@@ -252,7 +252,7 @@
 
             if (blueskyInput && fediverseInput) {
                 blueskyInput.addEventListener("input", updateFediverseOutput);
-                fediverseInput.addEventListener("input", updateBlueskyOutput);
+                fediverseInput.addEventListener("input", updateBlueskyDisplay);
             }
         }
 
