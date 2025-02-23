@@ -98,7 +98,6 @@
                 // Add @ only if it's not already there
                 if (!blueskyHandle.startsWith('@')) {
                     blueskyHandle = blueskyHandle.replace('@', ''); // Remove if exists
-                    // Changed to write to blueskyOutput instead of fediverseOutput
                     document.getElementById('blueskyOutput').textContent = `@${blueskyHandle}.ap.brid.gy`;
                 } else {
                     blueskyHandle = blueskyHandle.substring(1); // Remove the @ at the start
@@ -107,20 +106,26 @@
             } else {
                 document.getElementById('blueskyOutput').textContent = '';
             }
-            console.log('Fediverse output updated:', document.getElementById('blueskyOutput').textContent);
         }
 
         function updateBlueskyOutput() {
             let fediverseHandle = document.getElementById('fediverseHandle').value.trim();
             if (fediverseHandle) {
-                // Remove @ if it exists and handle the @ in the output format
-                fediverseHandle = fediverseHandle.replace('@', '');
-                // Changed to write to fediverseOutput instead of blueskyOutput
-                document.getElementById('fediverseOutput').textContent = `@${fediverseHandle}@bsky.brid.gy`;
+                // Remove any starting @ if present
+                fediverseHandle = fediverseHandle.replace(/^@/, '');
+
+                // Split at the @ that separates username and domain
+                const [username, domain] = fediverseHandle.split('@');
+
+                if (domain) {
+                    // Combine username and domain without @ between them
+                    document.getElementById('fediverseOutput').textContent = `@${username}.${domain}@bsky.brid.gy`;
+                } else {
+                    document.getElementById('fediverseOutput').textContent = `@${username}@bsky.brid.gy`;
+                }
             } else {
                 document.getElementById('fediverseOutput').textContent = '';
             }
-            console.log('Bluesky output updated:', document.getElementById('fediverseOutput').textContent);
         }
 
         function copyToClipboard(elementId, tooltipId) {
@@ -135,30 +140,18 @@
         }
 
         function setupEventListeners() {
-            console.log('Setting up event listeners...');
             const blueskyInput = document.getElementById("blueskyHandle");
             const fediverseInput = document.getElementById("fediverseHandle");
 
             if (blueskyInput && fediverseInput) {
-                blueskyInput.addEventListener("input", function (e) {
-                    console.log('Bluesky input changed:', e.target.value);
-                    updateFediverseOutput();
-                });
-
-                fediverseInput.addEventListener("input", function (e) {
-                    console.log('Fediverse input changed:', e.target.value);
-                    updateBlueskyOutput();
-                });
-
-                console.log('Event listeners attached successfully');
-            } else {
-                console.error('Could not find input elements');
+                blueskyInput.addEventListener("input", updateFediverseOutput);
+                fediverseInput.addEventListener("input", updateBlueskyOutput);
             }
         }
 
-        // Try to set up listeners both ways to ensure they're attached
+        // Set up listeners
         document.addEventListener("DOMContentLoaded", setupEventListeners);
-        setupEventListeners(); // Also try immediate setup
+        setupEventListeners();
     </script>
 </head>
 
@@ -181,6 +174,14 @@
             <td>
                 2. Follow Bluesky users who have bridged their account to the Fediverse at <br>
                 <strong>@username.app.tld@bsky.brid.gy</strong>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                Example: jonudell.bluesky.social
+            </td>
+            <td>
+                Example: judell@social.coop
             </td>
         </tr>
         <tr>
