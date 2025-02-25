@@ -118,8 +118,7 @@
         let tldLoaded = false;
 
         function isValidBlueskyOutput(str) {
-            // Hardcoded bsky.social: must match @username.bsky.social.bsky.brid.gy
-            return /^@[A-Za-z0-9_-]+\.bsky\.social\.bsky\.brid\.gy$/.test(str);
+            return /^@[A-Za-z0-9_-]+\.bsky\.social@bsky\.brid\.gy$/.test(str);
 
         }
 
@@ -197,7 +196,7 @@
                     blueskyHandle = blueskyHandle.slice(1);
                 }
                 // Construct output
-                const result = `@${blueskyHandle}.bsky.brid.gy`;
+                const result = `@${blueskyHandle}@bsky.brid.gy`;
                 outputEl.textContent = result;
 
                 // --- NEW: validity check ---
