@@ -33,6 +33,11 @@
             /* Thin border between second and third row */
         }
 
+        tr:nth-last-child(5) {
+            border-bottom: 1px solid #ccc;
+            /* Thin border below the next-to-last row */
+        }
+
         /* Border after the final row */
         tr:last-child {
             border-bottom: 1px solid #ccc;
@@ -61,11 +66,9 @@
         }
 
         .output {
-            font-weight: bold;
             flex-grow: 1;
         }
 
-        /* --- NEW: classes for coloring output --- */
         .invalid {
             color: gray;
         }
@@ -133,6 +136,55 @@
             return validTLDs.has(tld); // **Only allow real TLDs**
         }
 
+        function isValidMastodonHandle(str) {
+            if (!tldLoaded) return false; // Ensure we wait for TLDs
+
+            const match = str.match(/^([a-zA-Z0-9._-]+)@([a-zA-Z0-9.-]+)\.([a-zA-Z]+)$/);
+            if (!match) return false; // Must match format
+
+            const tld = match[3].toLowerCase();
+            return validTLDs.has(tld); // Validate against real TLDs
+        }
+
+        function updateMastoLink() {
+            let mastoInput = document.getElementById('mastodonHandle').value.trim();
+            let mastoLink = document.getElementById('mastoLink');
+
+            if (isValidMastodonHandle(mastoInput)) {
+                mastoLink.href = `https://fed.brid.gy/ap/@${mastoInput}`;
+                mastoLink.textContent = mastoLink.href;
+                mastoLink.classList.remove("invalid");
+                mastoLink.classList.add("valid");
+            } else {
+                mastoLink.href = "#";
+                mastoLink.textContent = "Enter a valid Mastodon address";
+                mastoLink.classList.remove("valid");
+                mastoLink.classList.add("invalid");
+            }
+        }
+
+        function isValidBlueskyHandle(str) {
+            return /^[a-zA-Z0-9._-]+\.bsky\.social$/.test(str);
+        }
+
+        function updateBlueskyLink() {
+            let blueskyInput = document.getElementById('blueskyUserHandle').value.trim();
+            let blueskyLink = document.getElementById('blueskyLink');
+
+            if (isValidBlueskyHandle(blueskyInput)) {
+                blueskyLink.href = `https://fed.brid.gy/bsky/${blueskyInput}`;
+                blueskyLink.textContent = blueskyLink.href;
+                blueskyLink.classList.remove("invalid");
+                blueskyLink.classList.add("valid");
+            } else {
+                blueskyLink.href = "#";
+                blueskyLink.textContent = "Enter a valid Bluesky handle";
+                blueskyLink.classList.remove("valid");
+                blueskyLink.classList.add("invalid");
+            }
+        }
+
+
         function loadValidTlds(str) {
 
             // Fetch TLDs and revalidate fields once ready
@@ -155,30 +207,27 @@
         }
 
 
-        // **Ensure input field updates after validation status changes**
         function updateFediverseDisplay() {
-            let fediverseHandle = document.getElementById('fediverseHandle').value.trim();
-            let outputEl = document.getElementById('fediverseOutput');
-            let copyBtn = document.getElementById('copyFediverseBtn');
+            let blueskyHandle = document.getElementById('blueskyHandle').value.trim();
+            let outputEl = document.getElementById('blueskyOutput');
+            let copyBtn = document.getElementById('copyBlueskyBtn');
 
-            if (fediverseHandle) {
-                fediverseHandle = fediverseHandle.replace(/^@/, ''); // Remove leading @
-                const [username, domain] = fediverseHandle.split('@');
-                let result = username && domain ? `@${username}.${domain}.ap.brid.gy` : '';
+            if (blueskyHandle) {
+                blueskyHandle = blueskyHandle.replace(/^@/, ''); // Remove leading @
+                let result = `@${blueskyHandle}@bsky.brid.gy`;
+                outputEl.textContent = result || "[Awaiting input]";
 
-                outputEl.textContent = result;
-
-                if (isValidFediverseOutput(result)) {
+                if (isValidBlueskyOutput(result)) {
                     outputEl.classList.remove('invalid');
                     outputEl.classList.add('valid');
-                    copyBtn.style.display = 'inline';
+                    copyBtn.style.display = 'inline';  // ✅ Ensure copy button is shown
                 } else {
                     outputEl.classList.remove('valid');
                     outputEl.classList.add('invalid');
                     copyBtn.style.display = 'none';
                 }
             } else {
-                outputEl.textContent = '';
+                outputEl.textContent = "[Awaiting input]";
                 outputEl.classList.remove('valid', 'invalid');
                 copyBtn.style.display = 'none';
             }
@@ -223,17 +272,12 @@
             let copyBtn = document.getElementById('copyFediverseBtn');
 
             if (fediverseHandle) {
-                fediverseHandle = fediverseHandle.replace(/^@/, ''); // remove leading @
+                fediverseHandle = fediverseHandle.replace(/^@/, ''); // Remove leading @
                 const [username, domain] = fediverseHandle.split('@');
-                let result;
-                if (domain) {
-                    result = `@${username}.${domain}.ap.brid.gy`;
-                } else {
-                    result = `@${username}.ap.brid.gy`;
-                }
-                outputEl.textContent = result;
+                let result = username && domain ? `@${username}.${domain}.ap.brid.gy` : '';
 
-                // --- NEW: validity check ---
+                outputEl.textContent = result || "[Awaiting input]";
+
                 if (isValidFediverseOutput(result)) {
                     outputEl.classList.remove('invalid');
                     outputEl.classList.add('valid');
@@ -244,12 +288,12 @@
                     copyBtn.style.display = 'none';
                 }
             } else {
-                outputEl.textContent = '';
-                // Reset style/copy button
+                outputEl.textContent = "[Awaiting input]";
                 outputEl.classList.remove('valid', 'invalid');
                 copyBtn.style.display = 'none';
             }
         }
+
 
         function copyToClipboard(elementId, tooltipId) {
             const text = document.getElementById(elementId).textContent;
@@ -284,19 +328,21 @@
             <th>With your Bluesky account</th>
         </tr>
         <tr>
-            <td>1. Follow <strong>@bsky.brid.gy@bsky.brid.gy</strong> to bridge your posts to Bluesky.</td>
-            <td>1. Follow <strong>@ap.brid.gy</strong> to bridge your posts to the Fediverse.</td>
+            <td><strong>1.</strong> Follow <strong>@bsky.brid.gy@bsky.brid.gy</strong> to bridge your posts to Bluesky.
+            </td>
+            <td><strong>1.</strong> Follow <strong>@ap.brid.gy</strong> to bridge your posts to the Fediverse.</td>
         </tr>
         <tr>
             <td>
-                2. Follow Bluesky users who have bridged their account to the Fediverse at <br>
+                <strong>2.</strong> Follow Bluesky users who have bridged their account to the Fediverse at <br>
                 <strong>@username.app.tld@bsky.brid.gy</strong>
             </td>
             <td>
-                2. Follow Fediverse users who have bridged their account to Bluesky at <br>
+                <strong>2.</strong> Follow Fediverse users who have bridged their account to Bluesky at <br>
                 <strong>@username.app.tld.ap.brid.gy</strong>
             </td>
         </tr>
+        <tr>
         <tr>
             <td>
                 Example: jonudell.bsky.social
@@ -305,24 +351,25 @@
                 Example: judell@social.coop
             </td>
         </tr>
-        <tr>
-            <td>
-                <label>Bluesky Handle:
-                    <input type="text" id="blueskyHandle" placeholder="jonudell.bsky.social">
-                </label>
-            </td>
-            <td>
-                <label>Fediverse Handle:
-                    <input type="text" id="fediverseHandle" placeholder="judell@social.coop">
-                </label>
-            </td>
+
+        <td>
+            <label>Bluesky Handle:
+                <input type="text" id="blueskyHandle" placeholder="jonudell.bsky.social"
+                    oninput="updateFediverseDisplay()">
+            </label>
+        </td>
+        <td>
+            <label>Fediverse Handle:
+                <input type="text" id="fediverseHandle" placeholder="judell@social.coop"
+                    oninput="updateBlueskyDisplay()">
+            </label>
+        </td>
         </tr>
         <tr>
             <td>
                 <div class="output-container">
-                    <strong class="output" id="blueskyOutput"></strong>
+                    <div class="output" id="blueskyOutput">[Awaiting input]</div>
                     <div class="tooltip">
-                        <!-- NEW: give this button an id to show/hide -->
                         <button class="copy-btn" id="copyBlueskyBtn" style="display:none;"
                             onclick="copyToClipboard('blueskyOutput', 'tooltip1')">
                             📋
@@ -333,9 +380,8 @@
             </td>
             <td>
                 <div class="output-container">
-                    <strong class="output" id="fediverseOutput"></strong>
+                    <div class="output" id="fediverseOutput">[Awaiting input]</div>
                     <div class="tooltip">
-                        <!-- NEW: give this button an id to show/hide -->
                         <button class="copy-btn" id="copyFediverseBtn" style="display:none;"
                             onclick="copyToClipboard('fediverseOutput', 'tooltip2')">
                             📋
@@ -343,6 +389,45 @@
                         <span class="tooltiptext" id="tooltip2">Copy</span>
                     </div>
                 </div>
+            </td>
+        </tr>
+
+        <tr>
+            <td>
+                <strong>3.</strong> Find the Bridgy user page for a Mastodon account
+            </td>
+            <td>
+                <strong>3.</strong> Find the Bridgy user page for a Bluesky account
+            </td>
+        </tr>
+
+        <tr>
+            <td>
+                Example: judell@social.coop
+            </td>
+            <td>
+                Example: jonudell.bsky.social
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <label>Fediverse Handle:
+                    <input type="text" id="mastodonHandle" placeholder="judell@social.coop" oninput="updateMastoLink()">
+                </label>
+            </td>
+            <td>
+                <label>Bluesky Handle:
+                    <input type="text" id="blueskyUserHandle" placeholder="jonudell.bsky.social"
+                        oninput="updateBlueskyLink()">
+                </label>
+            </td>
+        </tr>
+        <tr>
+            <td>
+                <a id="mastoLink" href="#" class="invalid">Enter a valid Mastodon address</a>
+            </td>
+            <td>
+                <a id="blueskyLink" href="#" class="invalid">Enter a valid Bluesky handle</a>
             </td>
         </tr>
     </table>
