@@ -27,6 +27,19 @@
             color: white;
         }
 
+        /* Border between row 2 and row 3 */
+        tr:nth-child(3) {
+            border-top: 1px solid #ccc;
+            /* Thin border between second and third row */
+        }
+
+        /* Border after the final row */
+        tr:last-child {
+            border-bottom: 1px solid #ccc;
+            /* Thin border below the last row */
+        }
+
+
         th:nth-child(2) {
             background-color: #3399ff;
         }
@@ -100,14 +113,28 @@
     </style>
 
     <script>
+
+        let validTLDs = new Set();
+        let tldLoaded = false;
+
         function isValidBlueskyOutput(str) {
-            // Hardcoded bsky.social: must match @username.bsky.social.ap.brid.gy
-            return /^@[A-Za-z0-9_-]+\.bsky\.social\.ap\.brid\.gy$/.test(str);
+            // Hardcoded bsky.social: must match @username.bsky.social.bsky.brid.gy
+            return /^@[A-Za-z0-9_-]+\.bsky\.social\.bsky\.brid\.gy$/.test(str);
+
         }
 
+
         function isValidFediverseOutput(str) {
-            let validTLDs = new Set();
-            let tldLoaded = false;
+            if (!tldLoaded) return false; // **Ensures validation waits until TLDs are ready**
+
+            const match = str.match(/^@([A-Za-z0-9_-]+)\.([A-Za-z0-9_-]+)\.([A-Za-z]+)\.ap\.brid\.gy$/);
+            if (!match) return false; // Must match full format
+
+            const tld = match[3].toLowerCase();
+            return validTLDs.has(tld); // **Only allow real TLDs**
+        }
+
+        function loadValidTlds(str) {
 
             // Fetch TLDs and revalidate fields once ready
             fetch("https://data.iana.org/TLD/tlds-alpha-by-domain.txt")
@@ -126,46 +153,36 @@
                 .catch(() => {
                     console.warn("Failed to fetch TLD list. Falling back to basic validation.");
                 });
+        }
 
-            function isValidFediverseOutput(str) {
-                if (!tldLoaded) return false; // **Ensures validation waits until TLDs are ready**
 
-                const match = str.match(/^@([A-Za-z0-9_-]+)\.([A-Za-z0-9_-]+)\.([A-Za-z]+)@bsky\.brid\.gy$/);
-                if (!match) return false; // Must match full format
+        // **Ensure input field updates after validation status changes**
+        function updateFediverseDisplay() {
+            let fediverseHandle = document.getElementById('fediverseHandle').value.trim();
+            let outputEl = document.getElementById('fediverseOutput');
+            let copyBtn = document.getElementById('copyFediverseBtn');
 
-                const tld = match[3].toLowerCase();
-                return validTLDs.has(tld); // **Only allow real TLDs**
-            }
+            if (fediverseHandle) {
+                fediverseHandle = fediverseHandle.replace(/^@/, ''); // Remove leading @
+                const [username, domain] = fediverseHandle.split('@');
+                let result = username && domain ? `@${username}.${domain}.ap.brid.gy` : '';
 
-            // **Ensure input field updates after validation status changes**
-            function updateFediverseDisplay() {
-                let fediverseHandle = document.getElementById('fediverseHandle').value.trim();
-                let outputEl = document.getElementById('fediverseOutput');
-                let copyBtn = document.getElementById('copyFediverseBtn');
+                outputEl.textContent = result;
 
-                if (fediverseHandle) {
-                    fediverseHandle = fediverseHandle.replace(/^@/, ''); // Remove leading @
-                    const [username, domain] = fediverseHandle.split('@');
-                    let result = username && domain ? `@${username}.${domain}@bsky.brid.gy` : '';
-
-                    outputEl.textContent = result;
-
-                    if (isValidFediverseOutput(result)) {
-                        outputEl.classList.remove('invalid');
-                        outputEl.classList.add('valid');
-                        copyBtn.style.display = 'inline';
-                    } else {
-                        outputEl.classList.remove('valid');
-                        outputEl.classList.add('invalid');
-                        copyBtn.style.display = 'none';
-                    }
+                if (isValidFediverseOutput(result)) {
+                    outputEl.classList.remove('invalid');
+                    outputEl.classList.add('valid');
+                    copyBtn.style.display = 'inline';
                 } else {
-                    outputEl.textContent = '';
-                    outputEl.classList.remove('valid', 'invalid');
+                    outputEl.classList.remove('valid');
+                    outputEl.classList.add('invalid');
                     copyBtn.style.display = 'none';
                 }
+            } else {
+                outputEl.textContent = '';
+                outputEl.classList.remove('valid', 'invalid');
+                copyBtn.style.display = 'none';
             }
-
         }
 
 
@@ -180,7 +197,7 @@
                     blueskyHandle = blueskyHandle.slice(1);
                 }
                 // Construct output
-                const result = `@${blueskyHandle}.ap.brid.gy`;
+                const result = `@${blueskyHandle}.bsky.brid.gy`;
                 outputEl.textContent = result;
 
                 // --- NEW: validity check ---
@@ -211,9 +228,9 @@
                 const [username, domain] = fediverseHandle.split('@');
                 let result;
                 if (domain) {
-                    result = `@${username}.${domain}@bsky.brid.gy`;
+                    result = `@${username}.${domain}.ap.brid.gy`;
                 } else {
-                    result = `@${username}@bsky.brid.gy`;
+                    result = `@${username}.ap.brid.gy`;
                 }
                 outputEl.textContent = result;
 
@@ -257,6 +274,7 @@
         }
 
         document.addEventListener("DOMContentLoaded", setupEventListeners);
+        loadValidTlds()
     </script>
 </head>
 
@@ -273,11 +291,11 @@
         <tr>
             <td>
                 2. Follow Bluesky users who have bridged their account to the Fediverse at <br>
-                <strong>@username.app.tld.ap.brid.gy</strong>
+                <strong>@username.app.tld@bsky.brid.gy</strong>
             </td>
             <td>
                 2. Follow Fediverse users who have bridged their account to Bluesky at <br>
-                <strong>@username.app.tld@bsky.brid.gy</strong>
+                <strong>@username.app.tld.ap.brid.gy</strong>
             </td>
         </tr>
         <tr>
