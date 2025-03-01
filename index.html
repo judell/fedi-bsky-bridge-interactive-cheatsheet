@@ -151,9 +151,9 @@
             return validTLDs.has(tld); // Validate against real TLDs
         }
 
-                /**
-         * Helper functions for handle processing
-         */
+        /**
+ * Helper functions for handle processing
+ */
 
         // Clean a handle by removing any leading @ symbol
         function cleanHandle(handle) {
@@ -231,18 +231,11 @@
             if (isValidBlueskyHandle(blueskyInput)) {
                 blueskyLink.href = `https://fed.brid.gy/bsky/${blueskyInput}`;
                 blueskyLink.textContent = blueskyLink.href;
-                blueskyLink.classList.remove("invalid");
-                blueskyLink.classList.add("valid");
+                updateLinkState(blueskyLink, true);
             } else {
-                blueskyLink.href = "#";
-                blueskyLink.textContent = "Enter a valid Bluesky handle";
-                blueskyLink.classList.remove("valid");
-                blueskyLink.classList.add("invalid");
-                // Clear and show invalid state
                 updateLinkState(blueskyLink, false, "Enter a valid Bluesky address");
             }
         }
-
         function updateMastoLink() {
             let mastoInput = document.getElementById('mastodonHandle').value.trim();
             let mastoLink = document.getElementById('mastoLink');
@@ -250,15 +243,9 @@
             if (isValidMastodonHandle(mastoInput)) {
                 const cleanedInput = cleanHandle(mastoInput);
                 mastoLink.href = `https://fed.brid.gy/ap/@${cleanedInput}`;
-                 mastoLink.textContent = mastoLink.href;
-                mastoLink.classList.remove("invalid");
-                mastoLink.classList.add("valid");
+                mastoLink.textContent = mastoLink.href;
+                updateLinkState(mastoLink, true);
             } else {
-                mastoLink.href = "#";
-                mastoLink.textContent = "Enter a valid Mastodon address";
-                mastoLink.classList.remove("valid");
-                mastoLink.classList.add("invalid");
-                // Clear and show invalid state
                 updateLinkState(mastoLink, false, "Enter a valid Mastodon address");
             }
         }
@@ -303,42 +290,28 @@
             let outputEl = document.getElementById('blueskyOutput');
             let copyBtn = document.getElementById('copyBlueskyBtn');
 
-            if (blueskyHandle) {
-                // Remove any leading @
-                blueskyHandle = blueskyHandle.replace(/^@/, '');
+            const result = formatBlueskyForFediverse(blueskyHandle);
 
-                // Construct output
-                const result = `@${blueskyHandle}@bsky.brid.gy`;
+            // Use shared display function
+            updateDisplayWithValidation(result, outputEl, copyBtn, isValidBlueskyToFediverseFormat);
 
-                // Use shared display function
-                updateDisplayWithValidation(result, outputEl, copyBtn, isValidBlueskyToFediverseFormat);
-
-                logCall('convertBlueskyToFediverseFormat', `Formatted "${blueskyHandle}" to "${result}"`);
-            } else {
-                // Use shared display function with empty value
-                updateDisplayWithValidation("", outputEl, copyBtn, isValidBlueskyToFediverseFormat);
-
-                logCall('convertBlueskyToFediverseFormat', 'No input');
-            }
+            logCall('convertBlueskyToFediverseFormat', blueskyHandle ? `Formatted "${blueskyHandle}" to "${result}"` : 'No input');
         }
 
         function convertFediverseToBlueskyFormat() {
+            logCall('convertFediverseToBlueskyFormat', 'Called');
+
             let fediverseHandle = document.getElementById('fediverseHandle').value.trim();
             let outputEl = document.getElementById('fediverseOutput');
             let copyBtn = document.getElementById('copyFediverseBtn');
 
-            if (fediverseHandle) {
-                fediverseHandle = fediverseHandle.replace(/^@/, ''); // Remove leading @
-                const [username, domain] = fediverseHandle.split('@');
-                let result = username && domain ? `@${username}.${domain}.ap.brid.gy` : '';
+            const result = formatFediverseForBluesky(fediverseHandle);
 
-                // Use shared display update function
-                updateDisplayWithValidation(result, outputEl, copyBtn, isValidFediverseToBlueskyFormat);
-            } else {
-                updateDisplayWithValidation("", outputEl, copyBtn, isValidFediverseToBlueskyFormat);
-            }
+            // Use shared display update function
+            updateDisplayWithValidation(result, outputEl, copyBtn, isValidFediverseToBlueskyFormat);
+
+            logCall('convertFediverseToBlueskyFormat', fediverseHandle ? `Formatted "${fediverseHandle}" to "${result}"` : 'No input');
         }
-
 
         function copyToClipboard(elementId, tooltipId) {
             const text = document.getElementById(elementId).textContent;
@@ -354,13 +327,23 @@
         function initializeInputHandlers() {
             const blueskyInput = document.getElementById("blueskyHandle");
             const fediverseInput = document.getElementById("fediverseHandle");
+            const mastodonInput = document.getElementById("mastodonHandle");
+            const blueskyUserInput = document.getElementById("blueskyUserHandle");
 
             // Add event listeners through JavaScript only
             blueskyInput?.addEventListener("input", convertBlueskyToFediverseFormat);
             fediverseInput?.addEventListener("input", convertFediverseToBlueskyFormat);
+            mastodonInput?.addEventListener("input", updateMastoLink);
+            blueskyUserInput?.addEventListener("input", updateBlueskyLink);
+
+            // Add event listeners for copy buttons
+            document.getElementById("copyBlueskyBtn")?.addEventListener("click",
+                () => copyToClipboard('blueskyOutput', 'tooltip1'));
+            document.getElementById("copyFediverseBtn")?.addEventListener("click",
+                () => copyToClipboard('fediverseOutput', 'tooltip2'));
 
             console.log("Event handlers initialized");
-        }
+         }
 
         document.addEventListener("DOMContentLoaded", initializeInputHandlers);
         loadValidTlds()
