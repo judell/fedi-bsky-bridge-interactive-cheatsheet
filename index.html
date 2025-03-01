@@ -146,6 +146,25 @@
             return validTLDs.has(tld); // Validate against real TLDs
         }
 
+        function updateDisplayWithValidation(value, outputEl, copyBtn, validationFn, emptyMessage = "[Awaiting input]") {
+            if (value) {
+                outputEl.textContent = value;
+                if (validationFn(value)) {
+                    outputEl.classList.remove('invalid');
+                    outputEl.classList.add('valid');
+                    copyBtn.style.display = 'inline';
+                } else {
+                    outputEl.classList.remove('valid');
+                    outputEl.classList.add('invalid');
+                    copyBtn.style.display = 'none';
+                }
+            } else {
+                outputEl.textContent = emptyMessage;
+                outputEl.classList.remove('valid', 'invalid');
+                copyBtn.style.display = 'none';
+            }
+        }
+
         function updateMastoLink() {
             let mastoInput = document.getElementById('mastodonHandle').value.trim();
             let mastoLink = document.getElementById('mastoLink');
@@ -199,37 +218,27 @@
                     tldLoaded = true; // Mark as ready
 
                     // **Revalidate existing inputs immediately**
-                    updateFediverseDisplay();
+                    convertBlueskyToFediverseFormat();
                 })
                 .catch(() => {
                     console.warn("Failed to fetch TLD list. Falling back to basic validation.");
                 });
         }
 
+        function convertFediverseToBlueskyFormat() {
+            let fediverseHandle = document.getElementById('fediverseHandle').value.trim();
+            let outputEl = document.getElementById('fediverseOutput');
+            let copyBtn = document.getElementById('copyFediverseBtn');
 
-        function updateFediverseDisplay() {
-            let blueskyHandle = document.getElementById('blueskyHandle').value.trim();
-            let outputEl = document.getElementById('blueskyOutput');
-            let copyBtn = document.getElementById('copyBlueskyBtn');
+            if (fediverseHandle) {
+                fediverseHandle = fediverseHandle.replace(/^@/, ''); // Remove leading @
+                const [username, domain] = fediverseHandle.split('@');
+                let result = username && domain ? `@${username}.${domain}.ap.brid.gy` : '';
 
-            if (blueskyHandle) {
-                blueskyHandle = blueskyHandle.replace(/^@/, ''); // Remove leading @
-                let result = `@${blueskyHandle}@bsky.brid.gy`;
-                outputEl.textContent = result || "[Awaiting input]";
-
-                if (isValidBlueskyOutput(result)) {
-                    outputEl.classList.remove('invalid');
-                    outputEl.classList.add('valid');
-                    copyBtn.style.display = 'inline';  // ✅ Ensure copy button is shown
-                } else {
-                    outputEl.classList.remove('valid');
-                    outputEl.classList.add('invalid');
-                    copyBtn.style.display = 'none';
-                }
+                // Use shared display update function
+                updateDisplayWithValidation(result, outputEl, copyBtn, isValidFediverseOutput);
             } else {
-                outputEl.textContent = "[Awaiting input]";
-                outputEl.classList.remove('valid', 'invalid');
-                copyBtn.style.display = 'none';
+                updateDisplayWithValidation("", outputEl, copyBtn, isValidFediverseOutput);
             }
         }
 
@@ -355,7 +364,7 @@
         <td>
             <label>Bluesky Handle:
                 <input type="text" id="blueskyHandle" placeholder="jonudell.bsky.social"
-                    oninput="updateFediverseDisplay()">
+                    oninput="convertBlueskyToFediverseFormat()">
             </label>
         </td>
         <td>
