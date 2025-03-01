@@ -1,3 +1,4 @@
+
 ## [2025-03-01]
 
 **Refined link updates and expanded event binding**
@@ -9,7 +10,8 @@
   Removed the inline `onclick` attributes on copy buttons and now bind them through JavaScript in `initializeInputHandlers`.
 
 - **Minor cleanup**
-  Removed redundant code paths in `updateBlueskyLink` and `updateMastoLink`, making them more consistent with the rest of the code.
+  Removed redundant code paths in `updateBlueskyLink` and `updateMastoLink`, making them more consistent with the rest of the code. Removed unused `onInput`s.
+
 ## [2025-02-28]
 
 **Refactoring with Logging Utility, Validation Improvements, and Consolidated Display Logic**
